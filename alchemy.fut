@@ -1,98 +1,87 @@
 import "world"
 
 -- The random parameter 'r' is used to decrease the frequency of some interactions.
-let applyAlchemy (r: i32) (x: element) (y: element): (element, element) =
+let applyAlchemy' (r: i32) (x: element_type) (y: element_type): (element_type, element_type) =
+  match (x, y)
   -- water + salt = salt_water + nothing
-  if      x == water && y == salt
-  then (salt_water, nothing)
-  else if x == salt && y == water
-  then (nothing, salt_water)
-
-  -- wall + steam = wall + condensed steam
-  else if isWall x && y == steam_water
-  then (x, steam_condensed)
-  else if x == steam_water && isWall y
-  then (steam_condensed, y)
+  case (#water, #salt) -> (#salt_water, #nothing)
+  case (#water, #salt) -> (#nothing, #salt_water)
 
   -- water + fire = steam + nothing
-  else if x == water && isFire y
-  then (steam_water, nothing)
-  else if isFire x && y == water
-  then (nothing, steam_water)
+  case (#water, #fire) -> (#steam_water, #nothing)
+  case (#fire, #water) -> (#nothing, #steam_water)
 
   -- salt water + fire = steam + salt
-  else if x == salt_water && isFire y
-  then (steam_water, salt)
-  else if isFire x && y == salt_water
-  then (salt, steam_water)
+  case (#salt_water, #fire) -> (#steam_water, #salt)
+  case (#fire, #salt_water) -> (#salt, #steam_water)
 
   -- oil + fire = new fire + new fire
-  else if x == oil && isFire y
-  then (fire, fire)
-  else if isFire x && y == oil
-  then (fire, fire)
+  case (#oil, #fire) -> (#fire, #fire)
+  case (#fire, #oil) -> (#fire, #fire)
 
-  -- torch/napalm + nothing = torch/napalm + fire
-  else if x == nothing && (y == torch || y == napalm)
-  then (fire, y)
-  else if (x == torch || y == napalm) && y == nothing
-  then (x, fire)
+  -- torch + nothing = torch + fire
+  case (#torch, #nothing) -> (#torch, #fire)
+  case (#nothing, #torch) -> (#fire, #torch)
+
+   -- napalm + nothing = napalm + fire
+  case (#napalm, #nothing) -> (#napalm, #fire)
+  case (#nothing, #napalm) -> (#fire, #napalm)
 
   -- spout + nothing = spout + water
-  else if x == nothing && y == spout
-  then (water, spout)
-  else if x == spout && y == nothing
-  then (spout, water)
+  case (#spout, #nothing) -> (#spout, #nothing)
+  case (#nothing, #spout) -> (#nothing, #spout)
 
   -- fire + plant = new fire + sand OR new fire + new fire
-  else if isFire x && y == plant
-  then if r < 2000 then (fire, sand) else (fire, fire)
-  else if x == plant && isFire y
-  then if r < 2000 then (sand, fire) else (fire, fire)
+  case (#fire, #plant) -> if r < 2000 then (#fire, #sand) else (#fire, #fire)
+  case (#plant, #fire) -> if r < 2000 then (#sand, #fire) else (#fire, #fire)
 
   -- water + plant = plant + plant
-  else if x == water && y == plant
-  then (plant, plant)
-  else if x == plant && y == water
-  then (plant, plant)
+  case (#water, #plant) -> (#plant, #plant)
+  case (#plant, #water) -> (#plant, #plant)
 
-  -- water/salt_water + metal = water/salt_water + sand
-  else if x == water && y == metal && r < 100
-  then (water, sand)
-  else if x == metal && y == water && r < 100
-  then (sand, water)
-  else if x == salt_water && y == metal && r < 300
-  then (salt_water, sand)
-  else if x == metal && y == salt_water && r < 300
-  then (sand, salt_water)
+  -- water + metal = water + sand
+  case (#water, #metal) -> if r < 100 then (#water, #sand) else (x, y)
+  case (#metal, #water) -> if r < 100 then (#sand, #water) else (x, y)
+
+    -- salt_water + metal = salt_water + sand
+  case (#salt_water, #metal) -> if r < 300 then (#salt_water, #sand) else (x, y)
+  case (#metal, #salt_water) -> if r < 300 then (#sand, #salt_water) else (x, y)
 
   -- lava + stone/metal/sand/salt = 2 * lava
-  else if x == lava && y == stone && r < 500 then (lava, lava)
-  else if x == stone && y == lava && r < 500 then (lava, lava)
+  case (#lava, #stone) -> if r < 500 then (#lava, #lava) else (x, y)
+  case (#stone, #lava) -> if r < 500 then (#lava, #lava) else (x, y)
 
-  else if x == lava && y == metal && r < 100 then (lava, lava)
-  else if x == metal && y == lava && r < 100 then (lava, lava)
+  case (#lava, #metal) -> if r < 100 then (#lava, #lava) else (x, y)
+  case (#metal, #lava) -> if r < 100 then (#lava, #lava) else (x, y)
 
-  else if x == lava && y == sand && r < 5000 then (lava, lava)
-  else if x == sand && y == lava && r < 5000 then (lava, lava)
+  case (#lava, #sand) -> if r < 5000 then (#lava, #lava) else (x, y)
+  case (#sand, #lava) -> if r < 5000 then (#lava, #lava) else (x, y)
 
-  else if x == lava && y == salt && r < 5000 then (lava, lava)
-  else if x == salt && y == lava && r < 5000 then (lava, lava)
+  case (#lava, #salt) -> if r < 5000 then (#lava, #lava) else (x, y)
+  case (#salt, #lava) -> if r < 5000 then (#lava, #lava) else (x, y)
 
   -- lava + oil/plant = lava + fire
-  else if x == lava && y == oil && r < 8000 then (lava, fire)
-  else if x == oil && y == lava && r < 8000 then (fire, lava)
-  else if x == lava && y == plant && r < 8000 then (lava, fire)
-  else if x == plant && y == lava && r < 8000 then (fire, lava)
+  case (#lava, #oil) -> if r < 8000 then (#lava, #fire) else (x, y)
+  case (#oil, #lava) -> if r < 8000 then (#fire, #lava) else (x, y)
+
+  case (#lava, #plant) -> if r < 8000 then (#lava, #fire) else (x, y)
+  case (#plant, #lava) -> if r < 8000 then (#fire, #lava) else (x, y)
 
   -- water + lava = steam + stone
-  else if x == water && y == lava then (steam_water, stone)
-  else if x == lava && y == water then (stone, steam_water)
+  case (#water, #lava) -> (#steam_water, #stone)
+  case (#lava, #water) -> (#stone, #steam_water)
 
   -- salt_water + lava = steam + stone OR steam + salt
-  else if x == salt_water && y == lava then
-    (if r < 2000 then (steam_water, salt) else (steam_water, stone))
-  else if x == lava && y == salt_water then
-    (if r < 2000 then (salt, steam_water) else (stone, steam_water))
+  case (#salt_water, #lava) -> if r < 20000 then (#steam_water, #salt) else (#steam_water, #stone)
+  case (#lava, #salt_water) -> if r < 20000 then (#salt, #steam_water) else (#stone, #steam_water)
 
-  else (x,y)
+  -- wall + steam = wall + condensed steam
+  case (_, #steam_water) -> if isWall' x then (x, #steam_condensed) else (x,y)
+  case (#steam_water, _) -> if isWall' y then (#steam_condensed, y) else (x,y)
+
+  case _ -> (x, y)
+
+
+let applyAlchemy (r: i32) (x: element) (y: element) : (element, element) =
+  let (x', y') = applyAlchemy' r x.1 y.1
+  in ((x', x.2), (y', y.2))

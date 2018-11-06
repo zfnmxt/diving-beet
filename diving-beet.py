@@ -105,7 +105,7 @@ while True:
                                           mouse_x, mouse_y)
         if now_pointing_at != pointing_at:
             pointing_at = now_pointing_at
-            pointing_at_name = element_name(now_pointing_at)
+            pointing_at_name = element_name(now_pointing_at[0])
         end = time.time()
         query_time = (end-start)*1000
     else:

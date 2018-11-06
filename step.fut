@@ -6,7 +6,8 @@ type marg_pos = i32
 
 -- A Margolus neighborhood.  We will just call these 'hood's, because
 -- it is more gangsta.
-type hood = (u8,u8,u8,u8)
+--type hood = (u8,u8,u8,u8)
+type hood = (element, element, element, element)
 
 -- The following two functions should be used for all hood
 -- interaction.  Never just pattern patch directly on the value!
@@ -19,15 +20,15 @@ let hoodFromQuadrants (ul: element) (ur: element) (dl: element) (dr: element): h
 
 -- Return the requested quadrant from the given hood.
 let hoodQuadrant (h: hood) (i: marg_pos): element =
-  let (ul0, ur0, dl0, dr0) = hoodQuadrants h in
-  if      i == 0 then ul0
-  else if i == 1 then ur0
-  else if i == 2 then dl0
-  else                dr0
+  let (ul0, ur0, dl0, dr0) = hoodQuadrants h
+  in match i
+     case 0 -> ul0
+     case 1 -> ur0
+     case 2 -> dl0
+     case _ -> dr0
 
 let indexToHood (offset: i32) (i: i32): (i32, i32) =
-  if offset == 0 then (i / 2, i % 2)
-  else ((i+1) / 2, (i+1) % 2)
+  if offset == 0 then (i / 2, i % 2) else ((i+1) / 2, (i+1) % 2)
 
 -- Given a hood array at offset -1 or 0, return the element at index
 -- (x,y).  Out-of-bounds returns 'nothing'.
@@ -38,7 +39,7 @@ let worldIndex [w][h] (offset: i32) (elems: [w][h]hood) ((x,y): (i32,i32)): elem
 
   -- Then read if we are in-bounds.
   in if hx < 0 || hx >= w || hy < 0 || hy >= h
-     then nothing
+     then new #nothing
      else hoodQuadrant (unsafe elems[hx,hy]) (ix+iy*2)
 
 -- From http://stackoverflow.com/a/12996028
@@ -85,12 +86,12 @@ let gravity (h: hood): hood =
 
   let (ul, ur, dl, dr) =
     -- First check for fluid flow.
-    if ((isFluid dl && dr == nothing) || (isFluid dr && dl == nothing)) &&
+    if ((isFluid dl && dr.1 == #nothing) || (isFluid dr && dl.1 == #nothing)) &&
        isFluid ul && isFluid ur
     then (ul, ur, dr, dl)
-    else if isFluid ul && weight ur < weight ul && dl != nothing && dr != nothing && !(isWall dl) && !(isWall dr)
+    else if isFluid ul && weight ur < weight ul && dl.1 != #nothing && dr.1 != #nothing && !(isWall dl) && !(isWall dr)
     then (ur, ul, dl, dr)
-    else if isFluid ur && weight ul < weight ur && dl != nothing && dr != nothing && !(isWall dl) && !(isWall dr)
+    else if isFluid ur && weight ul < weight ur && dl.1 != #nothing && dr.1 != #nothing && !(isWall dl) && !(isWall dr)
     then (ur, ul, dr, dl)
     else if isFluid dl && weight ul < weight dl && weight ur < weight dl && weight dr < weight dl
     then (ul, ur, dr, dl)

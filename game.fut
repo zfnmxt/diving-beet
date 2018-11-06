@@ -33,8 +33,8 @@ let new_game_with (ww:i32,wh:i32) (e: element): ext_game_state =
       hoods = replicate w (replicate h (hoodFromQuadrants e e e e)),
       width = ww, height = wh}
 
-entry new_game (ww: i32) (wh: i32): ext_game_state = new_game_with (ww,wh) nothing
-entry new_game_random (ww: i32) (wh: i32): ext_game_state = new_game_with (ww,wh) turnip
+entry new_game (ww: i32) (wh: i32): ext_game_state = new_game_with (ww,wh) (new #nothing)
+entry new_game_random (ww: i32) (wh: i32): ext_game_state = new_game_with (ww,wh) (new #turnip)
 
 entry step ({generation=gen,hoods,width=ww,height=wh}: ext_game_state): ext_game_state =
   let hoods' = one_step (gen+1) (shiftHoods (gen%2) hoods)
@@ -50,41 +50,25 @@ let screen_point_to_world_point ((ul_x, ul_y): (f32,f32)) (s: f32)
   in (x', y')
 
 let elemColour (x: element): i32 =
-  if      x == steam_water
-  then bright (light (light (light blue)))
-  else if x == steam_condensed
-  then bright (light (light (light blue)))
-  else if x == oil
-  then brown
-  else if x == water
-  then bright (bright (light blue))
-  else if x == salt_water
-  then bright (bright (light (light blue)))
-  else if x == sand
-  then dim yellow
-  else if x == salt
-  then gray 0.95f32
-  else if x == stone
-  then gray 0.7f32
-  else if x == torch
-  then bright orange
-  else if x == plant
-  then dim green
-  else if x == spout
-  then blue
-  else if x == metal
-  then mix 0.2f32 blue 0.8f32 (gray 0.5f32)
-  else if x == lava
-  then bright red
-  else if x == napalm
-  then dark orange
-  else if x == turnip
-  then violet
-  else if x == wall
-  then gray 0.4f32
-  else if isFire x
-  then mix (f32.u8 (x - fire)) red (f32.u8 (fire_end - x)) yellow
-  else black -- handles 'nothing'
+  match x.1
+  case #steam_water     -> bright (light (light (light blue)))
+  case #steam_condensed -> bright (light (light (light blue)))
+  case #oil             -> brown
+  case #water           -> bright (bright (light blue))
+  case #salt_water      -> bright (bright (light (light blue)))
+  case #sand            -> dim yellow
+  case #salt            -> gray 0.95f32
+  case #stone           -> gray 0.7f32
+  case #torch           -> bright orange
+  case #plant           -> dim green
+  case #spout           -> blue
+  case #metal           -> mix 0.2f32 blue 0.8f32 (gray 0.5f32)
+  case #lava            -> bright red
+  case #napalm          -> dark orange
+  case #turnip          -> violet
+  case #wall            -> gray 0.4f32
+  case #fire            -> mix (f32.u8 x.2) red (f32.u8 (fire_end - x.2)) yellow
+  case #nothing         -> black
 
 
 let dist_sq(x0:f32,y0:f32) (x1:f32,y1:f32): f32 =
@@ -128,7 +112,7 @@ let line_dist (p: (i32,i32)) (v: (i32,i32)) (w: (i32,i32)): f32 =
 entry add_element [h][w]
                   ({generation=gen,hoods: [w][h]hood,width=ww,height=wh}: ext_game_state)
                   (ul_x: f32) (ul_y: f32) (s: f32) (sw: i32) (sh: i32)
-                  (b1: i32) (b2: i32) (c1: i32) (c2: i32) (r: i32) (elem: element): ext_game_state =
+                  (b1: i32) (b2: i32) (c1: i32) (c2: i32) (r: i32) (elem: element_type): ext_game_state =
   let from = screen_point_to_world_point (ul_x,ul_y) s (sw,sh) (ww,wh) (b1,b2)
   let to   = screen_point_to_world_point (ul_x,ul_y) s (sw,sh) (ww,wh) (c1,c2)
   let offset = gen % 2
@@ -140,10 +124,10 @@ entry add_element [h][w]
                     let dl_p = ((x*2)+offset+0, (y*2)+offset+1)
                     let dr_p = ((x*2)+offset+1, (y*2)+offset+1)
                     in hoodFromQuadrants
-                       (if line_dist ul_p from to < r32 r && ul == nothing then elem else ul)
-                       (if line_dist ur_p from to < r32 r && ur == nothing then elem else ur)
-                       (if line_dist dl_p from to < r32 r && dl == nothing then elem else dl)
-                       (if line_dist dr_p from to < r32 r && dr == nothing then elem else dr))
+                       (if line_dist ul_p from to < r32 r && ul.1 == #nothing then new elem else ul)
+                       (if line_dist ur_p from to < r32 r && ur.1 == #nothing then new elem else ur)
+                       (if line_dist dl_p from to < r32 r && dl.1 == #nothing then new elem else dl)
+                       (if line_dist dr_p from to < r32 r && dr.1 == #nothing then new elem else dr))
          (iota h)) (iota w)
   in {generation=gen, hoods=hoods', width=ww, height=wh}
 
@@ -162,51 +146,51 @@ entry clear_element [h][w]
                     let dl_p = ((x*2)+offset+0, (y*2)+offset+1)
                     let dr_p = ((x*2)+offset+1, (y*2)+offset+1)
                     in hoodFromQuadrants
-                       (if line_dist ul_p from to < r32 r then nothing else ul)
-                       (if line_dist ur_p from to < r32 r then nothing else ur)
-                       (if line_dist dl_p from to < r32 r then nothing else dl)
-                       (if line_dist dr_p from to < r32 r then nothing else dr))
+                       (if line_dist ul_p from to < r32 r then new #nothing else ul)
+                       (if line_dist ur_p from to < r32 r then new #nothing else ur)
+                       (if line_dist dl_p from to < r32 r then new #nothing else dl)
+                       (if line_dist dr_p from to < r32 r then new #nothing else dr))
          (iota h)) (iota w)
   in {generation=gen, hoods=hoods', width=ww, height=wh}
 
 
-entry insertable_elements =
-  [ oil
-  , water
-  , salt_water
-  , sand
-  , salt
-  , stone
-  , fire
-  , torch
-  , plant
-  , spout
-  , metal
-  , lava
-  , napalm
-  , turnip
-  , wall ]
+entry insertable_elements : []element_type = [ #oil
+                                             , #water
+                                             , #salt_water
+                                             , #sand
+                                             , #salt
+                                             , #stone
+                                             , #fire
+                                             , #torch
+                                             , #plant
+                                             , #spout
+                                             , #metal
+                                             , #lava
+                                             , #napalm
+                                             , #turnip
+                                             , #wall
+                                             ]
 
-entry element_name(x: element): []i32 =
-  if x == nothing then "nothing"
-  else if x == steam_water then "steam"
-  else if x == steam_condensed then "condensate"
-  else if x == oil then "oil"
-  else if x == water then "water"
-  else if x == salt_water then "salt water"
-  else if x == sand then "sand"
-  else if x == salt then "salt"
-  else if x == stone then "stone"
-  else if isFire x then "fire"
-  else if x == torch then "torch"
-  else if x == plant then "plant"
-  else if x == spout then "spout"
-  else if x == metal then "metal"
-  else if x == lava then "lava"
-  else if x == napalm then "napalm"
-  else if x == turnip then "random"
-  else if x == wall then "wall"
-  else "unnamed element"
+entry element_name(x: element_type): []i32 =
+  match x
+  case #nothing         -> "nothing"
+  case #steam_water     -> "steam"
+  case #steam_condensed -> "condensate"
+  case #oil             -> "oil"
+  case #water           -> "water"
+  case #salt_water      -> "salt water"
+  case #sand            -> "sand"
+  case #salt            -> "salt"
+  case #stone           -> "stone"
+  case #fire            -> "fire"
+  case #torch           -> "torch"
+  case #plant           -> "plant"
+  case #spout           -> "spout"
+  case #metal           -> "metal"
+  case #lava            -> "lava"
+  case #napalm          -> "napalm"
+  case #turnip          -> "random"
+  case #wall            -> "wall"
 
 entry element_at ({generation=gen,hoods,width=ww,height=wh}: ext_game_state)
                  (ul_x: f32) (ul_y: f32) (s: f32) (sw: i32) (sh: i32) (b1: i32) (b2: i32) =
