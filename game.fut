@@ -153,26 +153,24 @@ entry clear_element [h][w]
          (iota h)) (iota w)
   in {generation=gen, hoods=hoods', width=ww, height=wh}
 
+entry inc_element (x : element) (inc : i32) : element =
+  let insertable = filter isInsertable elems
+  let numbered   = zip (0..<(length insertable)) insertable
+  let found      = filter (\y -> x.1 == (y.2).1) numbered
+  in if (length found == 1)
+     then insertable[((head found).1 + inc) % (length insertable)]
+     else insertable[0]
 
-entry insertable_elements : []element_type = [ #oil
-                                             , #water
-                                             , #salt_water
-                                             , #sand
-                                             , #salt
-                                             , #stone
-                                             , #fire
-                                             , #torch
-                                             , #plant
-                                             , #spout
-                                             , #metal
-                                             , #lava
-                                             , #napalm
-                                             , #turnip
-                                             , #wall
-                                             ]
+entry next_element (x : element) : element =
+  inc_element x 1
 
-entry element_name(x: element_type): []i32 =
-  match x
+entry pre_element (x : element) : element =
+  inc_element x (-1)
+
+entry initial_element : element = new #sand
+
+entry element_name(x: element): []i32 =
+  match x.1
   case #nothing         -> "nothing"
   case #steam_water     -> "steam"
   case #steam_condensed -> "condensate"

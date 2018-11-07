@@ -47,6 +47,11 @@ let num_elems: i32 = length elems
 
 let fire_end : u8 = 10
 
+let isInsertable' (x: element_type) : bool =
+  x != #steam_water && x != #steam_condensed && x != #nothing
+
+let isInsertable (x: element) : bool = isInsertable' x.1
+
 let isWall' (x: element_type) : bool =
   x == #torch || x == #plant || x == #spout || x == #metal || x == #wall
 

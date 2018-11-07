@@ -47,22 +47,9 @@ def showText(what, where):
 beet_state = beet.new_game(width, height)
 
 def element_name(elem):
-    return ''.join(map(chr,list(beet.element_name(elem).get())))
+    return ''.join(map(chr,list(beet.element_name(elem))))
 
-# Initialise the list of insertable elements and their names.
-insertable = []
-for elem in beet.insertable_elements().get():
-    insertable += [(element_name(elem), elem)]
-insertable.sort()
-num_insertable = len(insertable)
-
-selection = 0
-# Set the initial selection to sand.
-for i in range(num_insertable):
-    if insertable[i][0] == 'sand':
-        selection = i
-        break
-
+selection = beet.initial_element
 modify_radius = 5
 old_pos = None
 
@@ -105,7 +92,7 @@ while True:
                                           mouse_x, mouse_y)
         if now_pointing_at != pointing_at:
             pointing_at = now_pointing_at
-            pointing_at_name = element_name(now_pointing_at[0])
+            pointing_at_name = element_name(now_pointing_at)
         end = time.time()
         query_time = (end-start)*1000
     else:
@@ -115,7 +102,7 @@ while True:
                    (futhark_time, blit_time, query_time)
 
     showText(speedmessage, (10, 10))
-    showText('%s (radius %d)' % (insertable[selection][0], modify_radius), (10,40))
+    showText('%s (radius %d)' % (element_name(selection), modify_radius), (10,40))
     showText('Under cursor: %s' % pointing_at_name, (10,70))
 
     pygame.display.flip()
@@ -130,9 +117,9 @@ while True:
                 modify_radius = max(modify_radius - 1, 1)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_PAGEDOWN:
-                selection = (selection + 1) % num_insertable
+                selection = next_element(selection)
             elif event.key == pygame.K_PAGEUP:
-                selection = (selection - 1) % num_insertable
+                selection = prev_element(selection)
             elif event.key == pygame.K_LEFT:
                 ul_x -= 0.01
                 rebound()
@@ -172,7 +159,7 @@ while True:
         if old_pos == None:
             old_pos = new_pos
 
-        args = [beet_state] + [ul_x, ul_y, scale, width, height] + list(old_pos) + list(new_pos) + [modify_radius, insertable[selection][1]]
+        args = [beet_state] + [ul_x, ul_y, scale, width, height] + list(old_pos) + list(new_pos) + [modify_radius, selection]
         beet_state = beet.add_element(*args)
         old_pos = new_pos
 
